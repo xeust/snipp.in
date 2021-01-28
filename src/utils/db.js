@@ -1,9 +1,17 @@
 import Dexie from "dexie";
 import { Deta } from 'deta';
 
-const files = Deta(process.env.VUE_APP_DETA_KEY).Base("files");
-const openFiles = Deta(process.env.VUE_APP_DETA_KEY).Base("openFiles");
-const activeFiles = Deta(process.env.VUE_APP_DETA_KEY).Base("activeFiles");
+
+function getCookieValue(a) {
+  var b = document.cookie.match('(^|;)\\s*' + a + '\\s*=\\s*([^;]+)');
+  return b ? b.pop() : '';
+}
+
+const pk = getCookieValue("pk");
+
+const files = Deta(pk).Base("files");
+const openFiles = Deta(pk).Base("openFiles");
+const activeFiles = Deta(pk).Base("activeFiles");
 
 const db = {
   files: files,
