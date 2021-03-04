@@ -1,7 +1,9 @@
 <img src="https://raw.githubusercontent.com/haxzie/snipp.in/master/public/logo.png" width="80px" height="80px"/>
 
-# Snipp.in
-> A Fast, tiny, in-browser, IndexedDB powered editor and Snippet manager
+# Snipp.in on Deta
+> A Fast, tiny, in-browser, Deta Base powered editor and Snippet manager
+
+This is an experimental fork of [snipp.in](https://github.com/haxzie/snipp.in), written by [Musthaq](https://github.com/haxzie/), that is modified to run on Deta.
 
 Built with [Vue.js](https://vuejs.org), [Dexie](https://dexie.org) and [Monaco Editor](https://microsoft.github.io/monaco-editor/)  
 

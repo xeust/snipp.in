@@ -22,7 +22,7 @@ export default {
         editor: state.activeEditor,
         id: id,
       });
-      db.openFiles.add(newOpenFile, ["id"]).catch((error) => {
+      db.openFiles.put(newOpenFile, id).catch((error) => {
         console.error(error);
       });
     }
@@ -115,20 +115,25 @@ export default {
     });
     // debugger
 
-    db.transaction("rw", db.openFiles, db.activeFiles, async () => {
+    const remoteFileCloser = async () => {
       // removing closed files fron openFiles
       await db.openFiles
-        .where("id")
-        .equals(id)
-        .delete();
+        .delete(id);
       console.log(`file ${id} deleted!`);
 
       // removing existing active file if no file is opened.
       if (state.openFiles[editor].length === 0) {
-        await db.activeFiles.clear();
+        const { value: remoteOpenFiles } = await db.activeFiles.fetch([]).next();
+
+        for (const file of remoteOpenFiles) {
+          await db.activeFiles.delete(file.key);
+        }
+
         console.log(`activeFiles emptied.`);
       }
-    })
+    }
+
+    remoteFileCloser()
       .then(() => {
         console.log("transaction done");
       })
@@ -170,11 +175,13 @@ export default {
     if (id && editor) {
       let newActiveFile = new OpenFileFootprint({
         editor: state.activeEditor,
-        id: id,
+        key: id,
       });
 
+      const detaActiveFile = { key: id, editor: state.activeEditor };
+
       // replaces the activeFile stored in IndexedDB with the new active file
-      db.activeFiles.put(newActiveFile).catch((error) => {
+      db.activeFiles.put(detaActiveFile).catch((error) => {
         console.error(error);
       });
     }

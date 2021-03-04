@@ -4,11 +4,12 @@
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build",
+    "build": "NODE_ENV=production vue-cli-service build",
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
     "core-js": "^3.6.5",
+    "deta": "0.0.8",
     "dexie": "^3.0.1",
     "file-saver": "^2.0.5",
     "lodash": "^4.17.19",

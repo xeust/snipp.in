@@ -6,11 +6,16 @@ import modules from "./modules";
 Vue.use(Vuex);
 const debug = process.env.NODE_ENV !== "production";
 
+export const types = {
+  SET_SYNC: "SET_SYNC",
+};
+
 export default new Vuex.Store({
   modules: {
     ...modules,
   },
   state: {
+    isSyncing: false,
     //global state
   },
   actions: {
@@ -31,7 +36,11 @@ export default new Vuex.Store({
       dispatch("clearCore");
     }
   },
-  mutations: {},
+  mutations: {
+    setSyncing(state, newIsSyncing) {
+      state.isSyncing = newIsSyncing
+    }
+  },
   strict: debug,
   plugins: debug ? [createLogger()] : [] // set logger only for development
 });

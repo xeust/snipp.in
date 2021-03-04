@@ -3,16 +3,19 @@ import VFile, { fileTypes } from "@/models/vFile.model";
 import db from "@/utils/db";
 import Dexie from "dexie";
 import omit from "lodash/omit";
+import store from '../../index';
 
 export default {
   /**
    * Loads all the files available in the localstorage into the store
    */
   loadFiles: async ({ commit, dispatch }) => {
-    db.transaction("rw", db.openFiles, db.activeFiles, db.files, async () => {
-      const openFiles = await db.openFiles.toArray();
-      const activeFiles = await db.activeFiles.toArray();
-      const files = await db.files.toArray();
+    const loader = async () => {
+      store.commit('setSyncing', true);
+      const { value: openFiles } = await db.openFiles.fetch([]).next();
+      const { value: activeFiles } = await db.activeFiles.fetch([]).next();
+      const { value: files } = await db.files.fetch([]).next();
+      store.commit('setSyncing', false);
 
       await dispatch(
         "Editor/reOpenFiles",
@@ -28,7 +31,9 @@ export default {
       }, {});
       console.log({ filesObject });
       commit(types.SET_FILES, filesObject);
-    })
+    };
+
+    loader()
       .then(() => {
         console.log("transaction committed");
       })
@@ -48,9 +53,11 @@ export default {
       ...state.files,
       [file.id]: file,
     });
-    db.files.add(file, ["id"]).catch((error) => {
+    store.commit('setSyncing', true);
+    await db.files.put(file, file.id).catch((error) => {
       console.error(error);
     });
+    store.commit('setSyncing', false);
     return file;
     // dispatch("Editor/openFile", file.id, { root: true });
   },
@@ -67,19 +74,21 @@ export default {
       },
     });
 
-    db.transaction("rw", db.files, async () => {
+    const mover = async () => {
+      store.commit('setSyncing', true);
       await db.files
-        .where("id")
-        .equals(id)
-        .modify({ parent: directoryId });
+        .update({ parent: directoryId }, id);
       console.log(`file ${id} moved to ${directoryId}!`);
-    })
-      .catch(Dexie.ModifyError, (error) => {
-        console.error(error.failures.length + " items failed to modify");
+      store.commit('setSyncing', false);
+    };
+
+    mover()
+      .catch((error) => {
+        console.error(error + " items failed to modify");
       })
       .catch((error) => {
         console.error("Generic error: " + error);
-      }); 
+      });
   },
 
   createDirectory: async ({ state, commit }, directoryDetails) => {
@@ -89,9 +98,11 @@ export default {
       ...state.files,
       [directory.id]: directory,
     });
-    db.files.add(directory, ["id"]).catch((error) => {
+    store.commit('setSyncing', true);
+    await db.files.put(directory, directory.id).catch((error) => {
       console.error(error);
     });
+    store.commit('setSyncing', false);
   },
 
   updateFileContents: async ({ state, commit, dispatch }, { id, contents }) => {
@@ -104,22 +115,25 @@ export default {
         contents,
       },
     });
-    db.transaction("rw", db.files, async () => {
+    const updater = async () => {
       // Mark bigfoots:
+      store.commit('setSyncing', true);
       await db.files
-        .where("id")
-        .equals(id)
-        .modify({ contents });
+        .update({ contents }, id);
       console.log(`file ${id} updated!`);
-    })
-      .catch(Dexie.ModifyError, (error) => {
+      store.commit('setSyncing', false);
+    }
+
+    updater()
+      .catch((error) => {
         // ModifyError did occur
-        console.error(error.failures.length + " items failed to modify");
+        console.error(error + " items failed to modify");
       })
       .catch((error) => {
         console.error("Generic error: " + error);
       });
   },
+
   renameFile: async ({ state, commit }, { id, name }) => {
     if (!id) return;
 
@@ -132,17 +146,19 @@ export default {
       },
     });
 
-    db.transaction("rw", db.files, async () => {
+    const renamer = async () => {
       // Mark bigfoots:
+      store.commit('setSyncing', true);
       await db.files
-        .where("id")
-        .equals(id)
-        .modify({ name });
+        .update({ name }, id);
       console.log(`file ${id} renamed!`);
-    })
-      .catch(Dexie.ModifyError, (error) => {
+      store.commit('setSyncing', false);
+    };
+
+    renamer()
+      .catch((error) => {
         // ModifyError did occur
-        console.error(error.failures.length + " items failed to modify");
+        console.error(error + " items failed to modify");
       })
       .catch((error) => {
         console.error("Generic error: " + error);
@@ -167,22 +183,25 @@ export default {
     await dispatch("Editor/closeFileFromAllEditor", { id }, { root: true });
     console.log("back to delete file");
     commit(types.SET_FILES, omit(state.files, id));
-    db.transaction("rw", db.files, async () => {
+    const deleter = async () => {
       // Mark bigfoots:
+      store.commit('setSyncing', true);
       await db.files
-        .where("id")
-        .equals(id)
-        .delete();
+        .delete(id);
       console.log(`file ${id} deleted!`);
-    })
-      .catch(Dexie.ModifyError, (error) => {
+      store.commit('setSyncing', false);
+    };
+
+    deleter()
+      .catch((error) => {
         // ModifyError did occur
-        console.error(error.failures.length + " items failed to modify");
+        console.error(error + " items failed to modify");
       })
       .catch((error) => {
         console.error("Generic error: " + error);
       });
   },
+
   deleteDirectory: async ({ state, commit, dispatch, rootGetters }, { id }) => {
     if (!id) return;
 
@@ -198,17 +217,20 @@ export default {
     }
     // then delete the directory
     commit(types.SET_FILES, omit(state.files, id));
-    db.transaction("rw", db.files, async () => {
+
+    const dirtyDeleter = async () => {
       // Mark bigfoots:
+      store.commit('setSyncing', true);
       await db.files
-        .where("id")
-        .equals(id)
-        .delete();
+        .delete(id);
       console.log(`file ${id} deleted!`);
-    })
-      .catch(Dexie.ModifyError, (error) => {
+      store.commit('setSyncing', false);
+    };
+
+    dirtyDeleter()
+      .catch((error) => {
         // ModifyError did occur
-        console.error(error.failures.length + " items failed to modify");
+        console.error(error + " items failed to modify");
       })
       .catch((error) => {
         console.error("Generic error: " + error);

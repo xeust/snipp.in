@@ -1,7 +1,7 @@
 <template>
   <div
     class="file-explorer"
-    :class="{ 'highlighted': getDraggingId === 'root' }"
+    :class="{ highlighted: getDraggingId === 'root' }"
     @drop="handleDrop"
     @dragover.prevent="handleDragOver"
     @dragenter.prevent
@@ -40,6 +40,7 @@
           snippets
         </p>
       </div>
+      <Syncing />
     </simplebar>
     <SlideYUpTransition>
       <div
@@ -64,6 +65,7 @@ import { FilePlusIcon, FolderPlusIcon } from "vue-feather-icons";
 import { SlideYUpTransition } from "vue2-transitions";
 import { mapGetters, mapActions, mapMutations } from "vuex";
 import DirectoryListing from "./DirectoryListing";
+import Syncing from "./Syncing";
 
 export default {
   components: {
@@ -71,6 +73,7 @@ export default {
     FolderPlusIcon,
     DirectoryListing,
     SlideYUpTransition,
+    Syncing,
   },
   data() {
     return {
@@ -103,13 +106,13 @@ export default {
       this.createDirectory({ editable: true });
     },
     handleDrop(event) {
-      const fileId = event.dataTransfer.getData('fileId');
-      this.moveFile({ id: fileId, directoryId: 'root' });
-      this.setDraggingId('');
+      const fileId = event.dataTransfer.getData("fileId");
+      this.moveFile({ id: fileId, directoryId: "root" });
+      this.setDraggingId("");
     },
     handleDragOver() {
-      if (this.getDraggingId !== 'root') {
-        this.setDraggingId('root'); 
+      if (this.getDraggingId !== "root") {
+        this.setDraggingId("root");
       }
     },
     closeContextMenu() {
